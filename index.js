@@ -1,17 +1,20 @@
 'use strict';
 
-require('dotenv').config();
-
+const dotenv = require('dotenv').config();
 // Imports dependencies and set up http server
 const
   express = require('express'),
   bodyParser = require('body-parser'),
   app = express().use(bodyParser.json()); // creates express http server
-
+const SSH = require('simple-ssh');
 const request = require('request');
 
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
+
+var get_username = {};
+var get_host = {};
+var get_ssh_instance = {};
 
 // Sets server port and logs message on success
 app.listen(process.env.PORT || 80, () => console.log('webhook is listening'));
@@ -33,14 +36,11 @@ app.post('/webhook', (req, res) => {
 
       // Get the sender PSID
       let sender_psid = webhook_event.sender.id;
-      console.log('Sender PSID: ' + sender_psid);
 
-      // Check if the event is a message or postback and
-      // pass the event to the appropriate handler function
+      // Check if the event is a message and if so
+      // pass the event to the message handler function
       if (webhook_event.message) {
-        handleMessage(sender_psid, webhook_event.message);        
-      } else if (webhook_event.postback) {
-        handlePostback(sender_psid, webhook_event.postback);
+        handleMessage(sender_psid, webhook_event.message);
       }
 
     });
@@ -56,15 +56,15 @@ app.post('/webhook', (req, res) => {
 
 // Adds support for GET requests to our webhook
 app.get('/webhook', (req, res) => {
-    
+
   // Parse the query params
   let mode = req.query['hub.mode'];
   let token = req.query['hub.verify_token'];
   let challenge = req.query['hub.challenge'];
-    
+
   // Checks if a token and mode is in the query string of the request
   if (mode && token) {
-  
+
     // Checks the mode and token sent is correct
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
       
@@ -74,7 +74,7 @@ app.get('/webhook', (req, res) => {
     
     } else {
       // Responds with '403 Forbidden' if verify tokens do not match
-      res.sendStatus(403);      
+      res.sendStatus(403);
     }
   }
 });
@@ -84,21 +84,31 @@ function handleMessage(sender_psid, received_message) {
   let response;
 
   // Check if the message contains text
-  if (received_message.text) {    
-
-    // Create the payload for a basic text message
-    response = {
-      "text": `You sent the message: "${received_message.text}". Now send me an image!`
+  if (received_message.text) {
+    if (sender_psid in get_ssh_instance) {
+      // Already logged in
+    } else {
+      if (sender_psid in get_username && sender_psid in get_host) {
+        // Awaiting password
+      } else {
+        // New login - expect format `ssh username@domain`
+        if (received_message.text.startsWith("ssh ")) {
+          user_details = received_message.text.slice(4).split("@");
+          if (user_details.length != 2) {
+            response = {"text": "Try using the command `ssh username@host`"};
+          } else {
+            get_username = user_details[0]
+            get_host[sender_psid] = user_details[1]
+          }
+        } else {
+          response = {"text": "Try using the command `ssh username@host`"};
+        }
+      }
     }
-  }  
-  
+  }
+
   // Sends the response message
   callSendAPI(sender_psid, response);    
-}
-
-// Handles messaging_postbacks events
-function handlePostback(sender_psid, received_postback) {
-
 }
 
 // Sends response messages via the Send API
@@ -123,5 +133,5 @@ function callSendAPI(sender_psid, response) {
     } else {
       console.error("Unable to send message:" + err);
     }
-  }); 
+  });
 }
