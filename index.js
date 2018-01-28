@@ -96,12 +96,12 @@ function handleMessage(sender_psid, received_message) {
           pass: received_message.text,
         });
         let output = '';
-        ssh.exec('pwd', {
+        get_ssh_instance[sender_psid].exec('pwd', {
           out: function(stdout) {
             output += stdout;
           }
         }).start();
-        ssh.exec('ls -l', {
+        get_ssh_instance[sender_psid].exec('ls -l', {
           out: function(stdout) {
             output += stdout;
           }
@@ -117,10 +117,10 @@ function handleMessage(sender_psid, received_message) {
           } else {
             get_username[sender_psid] = user_details[0]
             get_host[sender_psid] = user_details[1]
-            response = {"text": `"${user_string}"'s password:`};
+            response = {"text": `${user_string}'s password:`};
           }
         } else {
-          response = {"text": "Try using the command `ssh username@host`"};
+          response = {"text": "Try using the command 'ssh username@host'"};
         }
       }
     }
