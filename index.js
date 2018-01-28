@@ -6,7 +6,7 @@ const
   express = require('express'),
   bodyParser = require('body-parser'),
   app = express().use(bodyParser.json()); // creates express http server
-const SSH = require('simple-ssh');
+const node_ssh = require('node-ssh');
 const request = require('request');
 
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
@@ -90,21 +90,13 @@ function handleMessage(sender_psid, received_message) {
     } else {
       if (sender_psid in get_username && sender_psid in get_host) {
         // Awaiting password
-        get_ssh_instance[sender_psid] = new SSH({
+        get_ssh_instance[sender_psid] = new node_ssh()
+        get_ssh_instance[sender_psid].connect({
           host: get_host[sender_psid],
           user: get_username[sender_psid],
           pass: received_message.text,
         });
-        get_ssh_instance[sender_psid].exec('pwd', {
-          out: function(stdout) {
-            console.log(stdout);
-          }
-        }).start();
-        get_ssh_instance[sender_psid].exec('ls -l', {
-          out: function(stdout) {
-            console.log(stdout);
-          }
-        }).start();
+        console.log("here")
       } else {
         // New login - expect format `ssh username@domain`
         if (received_message.text.startsWith("ssh ")) {
