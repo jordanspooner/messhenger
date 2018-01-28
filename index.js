@@ -95,18 +95,16 @@ function handleMessage(sender_psid, received_message) {
           user: get_username[sender_psid],
           pass: received_message.text,
         });
-        let output = '';
         get_ssh_instance[sender_psid].exec('pwd', {
           out: function(stdout) {
-            output += stdout;
+            console.log(stdout);
           }
         }).start();
         get_ssh_instance[sender_psid].exec('ls -l', {
           out: function(stdout) {
-            output += stdout;
+            console.log(stdout);
           }
         }).start();
-        response = {"text": output};
       } else {
         // New login - expect format `ssh username@domain`
         if (received_message.text.startsWith("ssh ")) {
