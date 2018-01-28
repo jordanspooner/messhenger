@@ -90,15 +90,22 @@ function handleMessage(sender_psid, received_message) {
     } else {
       if (sender_psid in get_username && sender_psid in get_host) {
         // Awaiting password
+        get_ssh_instance[sender_psid] = new SSH({
+          host: get_host[sender_psid],
+          user: get_username[sender_psid],
+          pass: received_message.text,
+        });
       } else {
         // New login - expect format `ssh username@domain`
         if (received_message.text.startsWith("ssh ")) {
-          user_details = received_message.text.slice(4).split("@");
+          let user_string = received_message.text.slice(4);
+          let user_details = user_string.split("@");
           if (user_details.length != 2) {
-            response = {"text": "Try using the command `ssh username@host`"};
+            response = {"text": "Try using the command 'ssh username@host'"};
           } else {
-            get_username = user_details[0]
+            get_username[sender_psid] = user_details[0]
             get_host[sender_psid] = user_details[1]
+            response = {"text": `"${user_string}"'s password:`};
           }
         } else {
           response = {"text": "Try using the command `ssh username@host`"};
