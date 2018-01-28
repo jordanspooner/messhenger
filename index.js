@@ -95,6 +95,18 @@ function handleMessage(sender_psid, received_message) {
           user: get_username[sender_psid],
           pass: received_message.text,
         });
+        let output = '';
+        ssh.exec('pwd', {
+          out: function(stdout) {
+            output += stdout;
+          }
+        }).start();
+        ssh.exec('ls -l', {
+          out: function(stdout) {
+            output += stdout;
+          }
+        }).start();
+        response = {"text": output};
       } else {
         // New login - expect format `ssh username@domain`
         if (received_message.text.startsWith("ssh ")) {
@@ -135,9 +147,7 @@ function callSendAPI(sender_psid, response) {
     "method": "POST",
     "json": request_body
   }, (err, res, body) => {
-    if (!err) {
-      console.log('message sent!')
-    } else {
+    if (err) {
       console.error("Unable to send message:" + err);
     }
   });
